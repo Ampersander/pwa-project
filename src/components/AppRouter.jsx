@@ -14,7 +14,7 @@ import NotfoundPage from '../pages/NotfoundPage'
 import Profilepage from '../pages/Profilepage'
 import Registerpage from '../pages/Registerpage'
 import ResetPasswordPage from '../pages/ResetPasswordPage'
-import TestPage from '../pages/TestPage'
+import MyPresenationsPage from '../pages/MyPresentations'
 
 export default function AppRouter(props) {
   return (
@@ -25,7 +25,7 @@ export default function AppRouter(props) {
           <ProtectedRoute exact path='/login' component={Loginpage} />
           <ProtectedRoute exact path='/register' component={Registerpage} />
           <ProtectedRoute exact path='/profile' component={Profilepage} />
-          <ProtectedRoute exact path='/test' component={TestPage} />
+          <ProtectedRoute exact path='/my-presentations' component={MyPresenationsPage} />
           <ProtectedRoute
             exact
             path='/forgot-password'

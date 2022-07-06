@@ -5,6 +5,7 @@ import {
   Spacer,
   useColorMode,
   useColorModeValue,
+  Text
 } from '@chakra-ui/react'
 import React from 'react'
 import { FaMoon, FaSun } from 'react-icons/fa'
@@ -13,9 +14,9 @@ import Navlink from './Navlink'
 
 export function Navbar() {
   const { toggleColorMode } = useColorMode()
-  // const { logout, currentUser } = useAuth()
-  const { logout, currentUser } = useAuth()
 
+  const { logout, currentUser } = useAuth()
+  
   return (
     <Box
       borderBottom='2px'
@@ -29,7 +30,7 @@ export function Navbar() {
         mx='auto'
         spacing={4}
       >
-        <Navlink to='/' name='Firbase Authentication' size='lg' />
+        <Navlink to='/' name='Slides project' size='lg' />
         <Spacer />
         {!currentUser && <Navlink to='/login' name='Login' />}
         {!currentUser && <Navlink to='/register' name='Register' />}
@@ -44,7 +45,11 @@ export function Navbar() {
             }}
           />
         )}
-        <IconButton
+        {currentUser && <Navlink to='/my-presentations' name='My presentations' />}
+        
+
+    { <Text my={6}>{currentUser?.email}</Text> }
+    <IconButton
           variant='ghost'
           icon={useColorModeValue(<FaSun />, <FaMoon />)}
           onClick={toggleColorMode}
