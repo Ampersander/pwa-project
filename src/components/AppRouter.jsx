@@ -1,75 +1,51 @@
-import React from 'react'
-import {
-  BrowserRouter as Router,
-  Redirect,
-  Route,
-  Switch,
-  useLocation,
-} from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import ForgotPasswordPage from '../pages/ForgotPasswordPage'
-import Homepage from '../pages/Homepage'
-import Loginpage from '../pages/Loginpage'
-import NotfoundPage from '../pages/NotfoundPage'
-import Profilepage from '../pages/Profilepage'
-import Registerpage from '../pages/Registerpage'
-import ResetPasswordPage from '../pages/ResetPasswordPage'
-import TestPage from '../pages/TestPage'
+import React from 'react';
+import { BrowserRouter, Redirect, Route, Switch, useLocation } from 'react-router-dom';
 
-export default function AppRouter(props) {
-  return (
-    <>
-      <Router>
-        <Switch>
-          <Route exact path='/' component={Homepage} />
-          <ProtectedRoute exact path='/login' component={Loginpage} />
-          <ProtectedRoute exact path='/register' component={Registerpage} />
-          <ProtectedRoute exact path='/profile' component={Profilepage} />
-          <ProtectedRoute exact path='/test' component={TestPage} />
-          <ProtectedRoute
-            exact
-            path='/forgot-password'
-            component={ForgotPasswordPage}
-          />
-          <ProtectedRoute
-            exact
-            path='/reset-password'
-            component={ResetPasswordPage}
-          />
-          <Route exact path='*' component={NotfoundPage} />
-        </Switch>
-      </Router>
-    </>
-  )
+import { useAuth } from '../contexts/AuthContext';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import Login from '../pages/auth/Login';
+import Profile from '../pages/auth/Profile';
+import Register from '../pages/auth/Register';
+import ResetPassword from '../pages/auth/ResetPassword';
+import Home from '../pages/Home';
+import NotFound from '../pages/NotFound';
+import Test from '../pages/Test';
+
+const ProtectedRoute = (props) => {
+	const { currentUser } = useAuth();
+	const { path } = props;
+	const location = useLocation();
+
+	const guestRoutes = ['/login', '/register', '/forgot-password'];
+
+	if (guestRoutes.includes(path)) {
+		return currentUser
+			? (<Redirect to={location.state?.from ?? '/profile'} />)
+			: (<Route {...props} />)
+		;
+	}
+
+	return currentUser
+		? (<Route {...props} />)
+		: (<Redirect to={{ pathname: '/login', state: { from: path } }} />
+	);
 }
 
-function ProtectedRoute(props) {
-  const { currentUser } = useAuth()
-  const { path } = props
-  console.log('path', path)
-  const location = useLocation()
-  console.log('location state', location.state)
+export default function AppRouter(props) {
+	return (
+		<BrowserRouter>
+			<Switch>
+				<Route exact path='/' component={Home} />
 
-  if (
-    path === '/login' ||
-    path === '/register' ||
-    path === '/forgot-password' ||
-    path === '/reset-password'
-  ) {
-    return currentUser ? (
-      <Redirect to={location.state?.from ?? '/profile'} />
-    ) : (
-      <Route {...props} />
-    )
-  }
-  return currentUser ? (
-    <Route {...props} />
-  ) : (
-    <Redirect
-      to={{
-        pathname: '/login',
-        state: { from: path },
-      }}
-    />
-  )
+				<ProtectedRoute exact path='/login' component={Login} />
+				<ProtectedRoute exact path='/register' component={Register} />
+				<ProtectedRoute exact path='/profile' component={Profile} />
+				<ProtectedRoute exact path='/test' component={Test} />
+				<ProtectedRoute exact path='/forgot-password' component={ForgotPassword} />
+				<ProtectedRoute exact path='/reset-password' component={ResetPassword} />
+
+				<Route exact path='*' component={NotFound} />
+			</Switch>
+		</BrowserRouter>
+	);
 }

@@ -1,5 +1,6 @@
 import {
   Button,
+  Center,
   chakra,
   FormControl,
   FormLabel,
@@ -9,70 +10,71 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import React, { useState } from 'react'
-import { Card } from '../components/Card'
-import { Layout } from '../components/Layout'
-import { useHistory, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useHistory } from 'react-router-dom'
+import { Card } from '../../components/Card'
+import DividerWithText from '../../components/DividerWithText'
+import { Layout } from '../../components/Layout'
+import { useAuth } from '../../contexts/AuthContext'
 
-// A custom hook that builds on useLocation to parse
-// the query string for you.
-function useQuery() {
-  return new URLSearchParams(useLocation().search)
-}
-
-export default function ResetPasswordPage() {
-  const { resetPassword } = useAuth()
-  const query = useQuery()
+export default function ForgotPassword() {
   const history = useHistory()
-  const [password, setPassword] = useState('')
+  const { forgotPassword } = useAuth()
   const toast = useToast()
 
-  console.log(query.get('mode'), query.get('oobCode'))
+  const [email, setEmail] = useState('')
+
   return (
     <Layout>
       <Heading textAlign='center' my={12}>
-        Reset password
+        Forgot password
       </Heading>
       <Card maxW='md' mx='auto' mt={4}>
         <chakra.form
           onSubmit={async e => {
             e.preventDefault()
+            // your login logic here
             try {
-              await resetPassword(query.get('oobCode'), password)
+              await forgotPassword(email)
               toast({
-                description: 'Password has been changed, you can login now.',
+                description: `An email is sent to ${email} for password reset instructions.`,
                 status: 'success',
                 duration: 9000,
                 isClosable: true,
               })
-              history.push('/login')
             } catch (error) {
+              console.log(error.message)
               toast({
                 description: error.message,
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
               })
-              console.log(error.message)
             }
           }}
         >
           <Stack spacing='6'>
-            <FormControl id='password'>
-              <FormLabel>New password</FormLabel>
+            <FormControl id='email'>
+              <FormLabel>Email address</FormLabel>
               <Input
-                type='password'
-                autoComplete='password'
+                name='email'
+                type='email'
+                autoComplete='email'
                 required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </FormControl>
             <Button type='submit' colorScheme='pink' size='lg' fontSize='md'>
-              Reset password
+              Submit
             </Button>
           </Stack>
         </chakra.form>
+        <DividerWithText my={6}>OR</DividerWithText>
+        <Center>
+          <Button variant='link' onClick={() => history.push('/login')}>
+            Login
+          </Button>
+        </Center>
       </Card>
     </Layout>
   )
