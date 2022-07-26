@@ -44,7 +44,8 @@ export default function ModalComponent({
                     />
                     <div className='button-container'>
                         <button
-                            className='add-presentation'
+                            className='add-presentation' 
+                            onClick={addData}
                         >
                             Create
                         </button>

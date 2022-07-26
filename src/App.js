@@ -5,7 +5,7 @@ import Presentation from './components/presentation'
 import { app, database } from './firebaseConfig';
 
 function App() {
-  return (
+  return (  
     <Presentation  database={database}/>
   );
 }
