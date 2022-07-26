@@ -1,7 +1,7 @@
 import React, { createRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { useDimensions, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Box, Button, ButtonGroup, Container, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Input, InputGroup, InputLeftAddon, InputRightAddon, List, ListIcon, ListItem, Select, Stack, Textarea, Tooltip, useColorModeValue, useDisclosure, useEditableControls, Checkbox, CheckboxGroup, Text, Image, useBreakpointValue } from '@chakra-ui/react';
-import { FaArrowDown, FaArrowUp, FaCheck, FaCog, FaPlus, FaTimes, FaUser } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaCheck, FaCog, FaPlus, FaTimes, FaUser, FaMinus } from 'react-icons/fa';
 import CodeMirror from 'codemirror'; 
 import { Controlled } from 'react-codemirror2-react-17';
 // import { useScreenshot } from 'use-react-screenshot';
@@ -70,6 +70,30 @@ export default function Editor() {
 		const newSlides = [...presentation.slides.slice(0, index), newSlide, ...presentation.slides.slice(index + 1)];
 		setPresentation({ ...presentation, slides: newSlides });
 	};
+
+	const addSlide = (index) => {
+		console.log(index);
+		if(index == presentation.slides.length){
+			setPresentation({ ...presentation, slides: [...presentation.slides, { id: presentation.slides.length + 1, content: '', src: null }] });
+		}else{
+			const newSlides = [...presentation.slides.slice(0, index), { id: presentation.slides[index].id + 1, content: '', src: null }, ...presentation.slides.slice(index)];
+			setPresentation({ ...presentation, slides: newSlides });
+		}
+	};
+	const deleteSlide = (index) => {
+		console.log(index);
+		if(index == 0){
+			//remove the first slide
+			setPresentation({ ...presentation, slides: presentation.slides.slice(1) });
+			//setPresentation({ ...presentation, slides: [...presentation.slides.slice(1)] });
+		}else{
+			const newSlides = [...presentation.slides.slice(0, presentation.slides.length - 1)];
+			setPresentation({ ...presentation, slides: newSlides });
+		}
+		console.log(presentation.slides.length);
+
+	};
+	
 
 	const handleFormSubmit = async e => {
 		const { checked, id, name, value } = e.target;			
@@ -349,9 +373,16 @@ export default function Editor() {
 								</HStack>
 							</Editable>
 						</FormControl>
-
+						
 						{presentation.slides.sort().map((slide, index) => (
+							
 							<Container key={index} m={0} p={0} maxW='initial'>
+								{index == 0  && (
+									<DividerWithText hasComponents my={6}>
+										<IconButton icon={<FaPlus />} onClick={() => addSlide(index)} />
+										<IconButton icon={<FaMinus />} onClick={() => deleteSlide(index)} />
+									</DividerWithText>
+								)}
 								<Controlled
 									className='slide'
 									id={`slide.${slide.id}`}
@@ -361,11 +392,13 @@ export default function Editor() {
 									onChange={(editor, value) => takeScreenshots()}
 								/>
 
-								{index !== presentation.slides.length - 1 && (
+								{index !== presentation.slides.length  && (
 									<DividerWithText hasComponents my={6}>
-										<IconButton icon={<FaPlus />} onClick={() => {}} />
+										<IconButton icon={<FaPlus />} onClick={() => addSlide(index+1)} />
+										<IconButton icon={<FaMinus />} onClick={() => deleteSlide(index+1)} />
 									</DividerWithText>
 								)}
+
 							</Container>
 						))}
 
