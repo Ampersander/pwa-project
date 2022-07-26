@@ -9,12 +9,12 @@ import Register from '../pages/auth/Register';
 import ResetPassword from '../pages/auth/ResetPassword';
 import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
-import Test from '../pages/Test';
+import Editor from '../pages/Editor';
 
 const ProtectedRoute = (props) => {
 	const { currentUser } = useAuth();
-	const { path } = props;
 	const location = useLocation();
+	const { path, isLoading = true } = props;
 
 	const guestRoutes = ['/login', '/register', '/forgot-password'];
 
@@ -37,12 +37,12 @@ export default function AppRouter(props) {
 			<Switch>
 				<Route exact path='/' component={Home} />
 
+				<ProtectedRoute exact path='/editor' component={Editor} />
+				<ProtectedRoute exact path='/profile' component={Profile} />
+				<ProtectedRoute exact path='/reset-password' component={ResetPassword} />
 				<ProtectedRoute exact path='/login' component={Login} />
 				<ProtectedRoute exact path='/register' component={Register} />
-				<ProtectedRoute exact path='/profile' component={Profile} />
-				<ProtectedRoute exact path='/test' component={Test} />
 				<ProtectedRoute exact path='/forgot-password' component={ForgotPassword} />
-				<ProtectedRoute exact path='/reset-password' component={ResetPassword} />
 
 				<Route exact path='*' component={NotFound} />
 			</Switch>

@@ -1,12 +1,11 @@
 /** @format */
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Badge, chakra, Code, Heading, List, ListItem, OrderedList } from '@chakra-ui/react';
 
 import { Layout } from '../components/Layout';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function Home() {
 	return (

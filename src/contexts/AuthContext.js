@@ -5,11 +5,15 @@ import {
 	onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, confirmPasswordReset, ProviderId,
 	updateCurrentUser, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup
 } from 'firebase/auth';
+import { getDatabase, onDisconnect, ref, set } from "firebase/database";
 
+import { useDB } from '../contexts/DatabaseContext';
 import { auth } from '../utils/init-firebase';
 
 const AuthContext = createContext({
 	currentUser: null,
+	isLoading: true,
+	writeUserData: () => {},
 	signInWithGoogle: () => Promise,
 	login: () => Promise,
 	register: () => Promise,
@@ -23,12 +27,37 @@ const AuthContext = createContext({
 export const useAuth = () => useContext(AuthContext);
 
 export default function AuthContextProvider({ children }) {
+	const { database, child, push, ref } = useDB();
 	const [currentUser, setCurrentUser] = useState(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const usersRef = ref(database, 'users');
 
 	useEffect(() => {
-		const unsubscribe = onAuthStateChanged(auth, user => setCurrentUser(user ?? null));
+		const unsubscribe = onAuthStateChanged(auth, user => {
+			if (user) {
+				setCurrentUser(user);
+				// setIsLoading(false)
+			} else {
+				setCurrentUser(null);
+				// setIsLoading(true)
+			}
+		});
+
 		return () => unsubscribe();
-	}, []);
+	}, [currentUser, isLoading]);
+
+	function writeUserData({ user, isOnline } = {}) {
+		// console.log(user, isOnline, usersRef, child(usersRef, user.uid));
+
+		push(child(usersRef, user.uid), {
+			// displayName: user.displayName,
+			// email: user.email,
+			// photoUrl: user.photoUrl,
+			// isOnline: isOnline
+			aaa: 'John',
+			bbb: 'DOE'
+		});
+	}
 
 	function login(email, password) {
 		return signInWithEmailAndPassword(auth, email, password);
@@ -61,8 +90,6 @@ export default function AuthContextProvider({ children }) {
 	}
 
 	function update(user, name = '', value = null, password = '') {
-		let options = null;
-
 		switch (name) {
 			case 'displayName':
 			case 'photoUrl':
@@ -82,7 +109,7 @@ export default function AuthContextProvider({ children }) {
 
 	function forgotPassword(email) {
 		return sendPasswordResetEmail(auth, email, {
-			url: `http://localhost:3000/login`,
+			url: `http://localhost:3000/login`
 		});
 	}
 
@@ -101,6 +128,8 @@ export default function AuthContextProvider({ children }) {
 
 	const value = {
 		currentUser,
+		isLoading,
+		writeUserData,
 		signInWithGoogle,
 		login,
 		register,

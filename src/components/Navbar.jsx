@@ -23,6 +23,7 @@ export function Navbar() {
 				</>)}
 
 				{currentUser && (<>
+					<Navlink to='/editor' name='Editor' />
 					<Navlink to='/profile' name='Profile' />
 					<Navlink to='/logout' name='Logout' onClick={async e => { e.preventDefault(); await logout(); }} />
 				</>)}

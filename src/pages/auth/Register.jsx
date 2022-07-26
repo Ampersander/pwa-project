@@ -47,7 +47,7 @@ export default function Register() {
 
 		register(...Object.values(inputs).slice(1))
 			.then(res => handleRedirectToOrBack(res))
-			.catch(e => toast({ description: 'Email already in use.', status: 'error', ...toastDefaults }))
+			.catch(e => toast({ description: 'Invalid email or password.', status: 'error', ...toastDefaults }))
 			.finally(() => mounted.current && setIsSubmitting(false))
 		;
 	};

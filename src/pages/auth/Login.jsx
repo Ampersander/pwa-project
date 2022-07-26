@@ -13,7 +13,7 @@ import useMounted from '../../hooks/useMounted';
 const toastDefaults = { duration: 5000, isClosable: true };
 
 export default function Login() {
-	const { login, signInWithGoogle } = useAuth();
+	const { writeUserData, login, signInWithGoogle } = useAuth();
 	const history = useHistory();
 	const location = useLocation();
 	const mounted = useMounted();
@@ -26,10 +26,10 @@ export default function Login() {
 		const { name, value } = e.target;
 		setInputs(values => ({ ...values, [name]: value }))
 		setErrors(values => ({ ...values, [name]: value === '' ? true : false }))
-		console.log(errors);
 	};
 
 	const handleRedirectToOrBack = obj => {
+		writeUserData({ user: obj.user, isOnline: true });
 		history.replace(location.state?.from ?? '/profile');
 		toast({ description: `Logged in as ${obj.user.displayName}.`, status: 'success', ...toastDefaults });
 	};

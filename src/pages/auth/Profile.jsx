@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { Stack, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, chakra, Avatar, Button, ButtonGroup, Code, Container, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Image, Input, Text, Tooltip, useColorModeValue, useEditableControls, useToast, VisuallyHiddenInput } from '@chakra-ui/react';
+import { Avatar, Button, ButtonGroup, Code, Container, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, Tooltip, useColorModeValue, useDisclosure, useEditableControls, useToast } from '@chakra-ui/react';
 import { FaCheck, FaGoogle, FaTimes, FaTrash } from 'react-icons/fa';
 
 import DividerWithText from '../../components/DividerWithText';
@@ -12,7 +12,7 @@ import useMounted from '../../hooks/useMounted';
 const toastDefaults = { duration: 5000, isClosable: true };
 
 export default function Profile() {
-	const { currentUser, destroy, signInWithGoogle, update } = useAuth();
+	const { currentUser, destroy, signInWithGoogle, update, writeUserData } = useAuth();
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const history = useHistory();
 	const mounted = useMounted();
@@ -23,12 +23,47 @@ export default function Profile() {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const toast = useToast();
 
+	const EditableControls = ({ target }) => {
+		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls();
+
+		return (<>
+			{target === 'photoUrl' && (<Input hidden={!isEditing} py={2} px={4} ref={avatarRef} name='photoUrl' type='url' autoFocus onBlur={handleFormSubmit} />)}
+
+			{isEditing && (
+				<ButtonGroup justifyContent="end" size="sm" spacing={2} mt={2}>
+					<IconButton icon={<FaTimes />} {...getCancelButtonProps()} />
+					<IconButton type='submit' icon={<FaCheck />} {...getSubmitButtonProps()} />
+				</ButtonGroup>
+			)}
+		</>)
+	};
+
+	const EditableAvatar = () => {
+		return (<Avatar
+			name={inputs.displayName}
+			// as={Image}
+			loading='lazy'
+			src={inputs.photoUrl}
+			fallback={<Avatar boxSize='100px' />}
+			boxSize='100px'
+			borderRadius='full'
+		/>);
+	};
+	
+	const handleGoogleSignIn = () => {
+		setIsSubmitting(true);
+
+		signInWithGoogle()
+			.then(res => toast({ title: `Connected with Google!`, description: 'Refresh to update your profile!', status: 'success', ...toastDefaults }))
+			.catch(e => toast({ description: 'Could not connect with Google.', status: 'error', ...toastDefaults }))
+			.finally(() => mounted.current && setIsSubmitting(false))
+		;
+	};
+
 	const handleFormSubmit = async e => {
 		const { name, value } = e.target ?? e;
 
 		setIsSubmitting(true);
-
-		console.log(name + ' set to ' + value);
 
 		if (currentUser[name] === value) {
 			mounted.current && setIsSubmitting(false);
@@ -70,45 +105,8 @@ export default function Profile() {
 				break;
 		}
 
+		writeUserData({ user: currentUser, isOnline: true });
 		mounted.current && setIsSubmitting(false);
-	}
-
-	// const initials = currentUser.displayName ? currentUser.displayName.split(' ').map(word => word[0]).join('') : ' ';
-	
-	const handleGoogleSignIn = () => {
-		setIsSubmitting(true);
-
-		signInWithGoogle()
-			.then(res => toast({ title: `Connected with Google!`, description: 'Refresh to update your profile!', status: 'success', ...toastDefaults }))
-			.catch(e => toast({ description: 'Could not connect with Google.', status: 'error', ...toastDefaults }))
-			.finally(() => mounted.current && setIsSubmitting(false))
-		;
-	}
-
-	const EditableControls = ({ target }) => {
-		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls();
-
-		return (<>
-			{target === 'photoUrl' && (<Input hidden={!isEditing} py={2} px={4} ref={avatarRef} name='photoUrl' type='url' autoFocus onBlur={handleFormSubmit} />)}
-
-			{isEditing && (
-				<ButtonGroup justifyContent="end" size="sm" spacing={2} mt={2}>
-					<IconButton icon={<FaTimes />} {...getCancelButtonProps()} />
-					<IconButton type='submit' icon={<FaCheck />} {...getSubmitButtonProps()} />
-				</ButtonGroup>
-			)}
-		</>)
-	};
-
-	const EditableAvatar = () => {
-		return (<Avatar
-			name={inputs.displayName}
-			// as={Image}
-			src={inputs.photoUrl}
-			fallback={<Avatar boxSize='100px' />}
-			boxSize='100px'
-			borderRadius='full'
-		/>);
 	};
 
 	useEffect(() => {
@@ -121,11 +119,11 @@ export default function Profile() {
 
 			<Container maxW='container.lg' overflowX='auto' py={4}>
 				<HStack spacing='6'>
-					<FormControl id='avatar'>
-						{/* <FormLabel>Avatar</FormLabel> */}
+					<FormControl>
+						{/* <FormLabel htmlFor='avatar'>Avatar</FormLabel> */}
 
 						<Editable isDisabled defaultValue={<EditableAvatar />} onClick={() => avatarRef.current.click()}>
-							<Tooltip label="Click to edit">
+							<Tooltip label="Read Only">
 								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue("gray.100", "gray.700") }} />
 							</Tooltip>
 
@@ -135,8 +133,8 @@ export default function Profile() {
 						</Editable>
 					</FormControl>
 
-					<FormControl id='name'>
-						<FormLabel>Display Name</FormLabel>
+					<FormControl>
+						<FormLabel htmlFor='name'>Display Name</FormLabel>
 
 						<Editable defaultValue={inputs.displayName ?? inputs.email}>
 							<Tooltip label="Click to edit">
@@ -150,8 +148,8 @@ export default function Profile() {
 						</Editable>
 					</FormControl>
 
-					<FormControl id='email'>
-						<FormLabel>Email Address</FormLabel>
+					<FormControl>
+						<FormLabel htmlFor='email'>Email Address</FormLabel>
 
 						<Editable defaultValue={inputs.email}>
 							<Tooltip label="Click to edit">
@@ -165,7 +163,7 @@ export default function Profile() {
 						</Editable>
 					</FormControl>
 
-					<FormControl id='reset-password'>
+					<FormControl>
 						<FormLabel>Password</FormLabel>
 						<Button variant='outline' onClick={() => history.push('/reset-password')} colorScheme='pink' size='lg' fontSize='md'>Reset Password</Button>
 					</FormControl>
@@ -187,9 +185,9 @@ export default function Profile() {
 					<Button variant='outline' colorScheme='red' leftIcon={<FaTrash />} onClick={() => { setIsDeleting(true); onOpen(); }} isLoading={isSubmitting}>Delete Account</Button>
 				</Tooltip>
 
-				<chakra.pre p={4}>
+				{/* <chakra.pre p={4}>
 					{currentUser && (<pre>{JSON.stringify(currentUser, null, 4)}</pre>)}
-				</chakra.pre>
+				</chakra.pre> */}
 			</Container>
 
 			<Modal initialFocusRef={initialRef} isOpen={isOpen} onClose={onClose} isCentered>
