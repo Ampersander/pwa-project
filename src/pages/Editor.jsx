@@ -12,6 +12,7 @@ import { useDB } from '../contexts/DatabaseContext';
 import useMounted from '../hooks/useMounted';
 // import useScreenshots from '../hooks/useScreenshots';
 import DividerWithText from '../components/DividerWithText';
+import {Link} from "react-router-dom";
 
 require('codemirror/lib/codemirror.css');
 require('codemirror/theme/material.css');
@@ -353,7 +354,9 @@ export default function Editor() {
 							{/* for each slide, take a screenshot of it */}
 							{presentation.slides.sort().map((slide, index) => (
 								<ListItem key={index}>
-									<Image className='image' id={'image.' + index} loading='lazy' src={'https://fakeimg.pl/152x106/000/FFF/?font=lobster&text=Slide%20' + parseInt(index + 1)} />
+									<Link to={'#' + `${slide.id}`}>
+										<Image className='image' id={'image.' + index} loading='lazy' src={'https://fakeimg.pl/152x106/000/FFF/?font=lobster&text=Slide%20' + parseInt(index + 1)} />
+									</Link>
 								</ListItem>
 								// <Thumb index={index} slide={slide} />
 							))}

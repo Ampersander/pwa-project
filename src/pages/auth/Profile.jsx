@@ -1,8 +1,37 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 
-import { Avatar, Button, ButtonGroup, Code, Container, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, Tooltip, useColorModeValue, useDisclosure, useEditableControls, useToast } from '@chakra-ui/react';
-import { FaCheck, FaGoogle, FaTimes, FaTrash } from 'react-icons/fa';
+import {
+	Avatar,
+	Button,
+	ButtonGroup,
+	Code,
+	Container,
+	Editable,
+	EditableInput,
+	EditablePreview,
+	FormControl,
+	FormLabel,
+	Heading,
+	HStack,
+	IconButton,
+	Image,
+	Input,
+	Modal,
+	ModalBody,
+	ModalCloseButton,
+	ModalContent,
+	ModalFooter,
+	ModalHeader,
+	ModalOverlay,
+	Text,
+	Tooltip,
+	useColorModeValue,
+	useDisclosure,
+	useEditableControls,
+	useToast
+} from '@chakra-ui/react';
+import {FaCheck, FaGoogle, FaMinus, FaPlus, FaTimes, FaTrash} from 'react-icons/fa';
 
 import DividerWithText from '../../components/DividerWithText';
 import { Layout } from '../../components/Layout';
@@ -22,6 +51,36 @@ export default function Profile() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const toast = useToast();
+
+	const [doc, setDoc] = useState( {
+		title: 'Files',
+		pres: [
+			{ id_pres: 1, content: 'Document', src: null},
+			{ id_pres: 2, content: 'Document', src: null}
+		],
+		author: currentUser.displayName ?? currentUser.email,
+		path: '',
+		description: '',
+		createdAt: new Date().toLocaleString(),
+		updatedAt: new Date().toLocaleString(),
+		options: {
+			mode: 'xml',
+			theme: 'material',
+			lineNumbers: false,
+			lineWrapping: true,
+			readOnly: false
+		}
+	})
+
+	const addPresentation = (index) => {
+		console.log(index);
+		if (index == doc.pres.length){
+			setDoc({ ...doc, pres: [...doc.pres, { id_pres: doc.pres.length + 1, content: '', src: null}] });
+		} else {
+			const newPres = [...doc.pres.slice(0, index), { id_pres: doc.pres[index].id_pres + 1, content: '', src: null}, ...doc.pres.slice(index)];
+			setDoc({ ...doc, pres: newPres });
+		}
+	}
 
 	const EditableControls = ({ target }) => {
 		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls();
@@ -168,6 +227,24 @@ export default function Profile() {
 						<Button variant='outline' onClick={() => history.push('/reset-password')} colorScheme='pink' size='lg' fontSize='md'>Reset Password</Button>
 					</FormControl>
 				</HStack>
+
+				<DividerWithText my={6}>LIST OF FILES</DividerWithText>
+				<Link to={'editor/{id}'}>
+					<Image className='image' loading='lazy' src={'https://fakeimg.pl/152x106/000/FFF/?font=lobster&text=Slide%20'} />
+				</Link>
+
+				{doc.pres.sort().map((pres, index) => (
+
+				<Container key={index} m={0} p={0} maxW='initial'>
+					{index == 0  && (
+						<DividerWithText hasComponents my={6}>
+							<Link to={'editor'}>
+								<IconButton icon={<FaPlus />} onClick={() => addPresentation(index)} />
+							</Link>
+						</DividerWithText>
+					)}
+				</Container>
+				))}
 
 				<DividerWithText my={6}>CONNECTIONS</DividerWithText>
 
