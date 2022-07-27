@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 
-import { child, get, push, ref } from 'firebase/database';
+import { child, get, push, ref, onChildAdded, onValue } from 'firebase/database';
 
 import { database } from '../utils/init-firebase';
 
@@ -9,7 +9,8 @@ const DatabaseContext = createContext({
 	child: child,
 	get: get,
 	push: push,
-	ref: ref
+	ref: ref,
+	onValue: onValue
 });
 
 export const useDB = () => useContext(DatabaseContext);
@@ -20,8 +21,9 @@ export default function DatabaseContextProvider({ children }) {
 		child,
 		get,
 		push,
-		ref
-	};
+		ref,
+		onValue
+};
 
 	return (<DatabaseContext.Provider value={value}>{children}</DatabaseContext.Provider>);
 }

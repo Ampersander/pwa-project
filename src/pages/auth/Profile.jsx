@@ -9,10 +9,8 @@ import { Layout } from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import useMounted from '../../hooks/useMounted';
 
-const toastDefaults = { duration: 5000, isClosable: true };
-
 export default function Profile() {
-	const { currentUser, destroy, signInWithGoogle, update, writeUserData } = useAuth();
+	const { currentUser, destroy, signInWithGoogle, update, pushUserData, updateUserData } = useAuth();
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const history = useHistory();
 	const mounted = useMounted();
@@ -21,7 +19,7 @@ export default function Profile() {
 	const avatarRef = useRef();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const toast = useToast();
+	const toast = useToast({ isClosable: true, status: 'success' });
 
 	const EditableControls = ({ target }) => {
 		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls();
@@ -54,8 +52,8 @@ export default function Profile() {
 		setIsSubmitting(true);
 
 		signInWithGoogle()
-			.then(res => toast({ title: `Connected with Google!`, description: 'Refresh to update your profile!', status: 'success', ...toastDefaults }))
-			.catch(e => toast({ description: 'Could not connect with Google.', status: 'error', ...toastDefaults }))
+			.then(res => toast({ title: `Connected with Google!`, description: 'Refresh to update your profile!' }))
+			.catch(e => toast({ description: 'Could not connect with Google.', status: 'error' }))
 			.finally(() => mounted.current && setIsSubmitting(false))
 		;
 	};
@@ -76,21 +74,21 @@ export default function Profile() {
 			case 'photoUrl':
 			case 'displayName':
 				update(currentUser, 'profile', { [name]: value })
-					.then(res => toast({ description: `${name.replace(/^\w/, (c) => c.toUpperCase())} updated successfully!`, status: 'success', ...toastDefaults }))
-					.catch(e => toast({ description: `Invalid ${name}.`, status: 'error', ...toastDefaults }))
+					.then(res => toast({ description: `${name.replace(/^\w/, (c) => c.toUpperCase())} updated successfully!` }))
+					.catch(e => toast({ description: `Invalid ${name}.`, status: 'error' }))
 				;
 				break;
 			case 'email':
 			case 'password':
 				if (!isDeleting) {
 					update(currentUser, 'email', inputs.email, value)
-						.then(res => toast({ description: `Email address updated successfully!`, status: 'success', ...toastDefaults }))
-						.catch(e => toast({ description: `Invalid ${name}.`, status: 'error', ...toastDefaults }))
+						.then(res => toast({ description: `Email address updated successfully!` }))
+						.catch(e => toast({ description: `Invalid ${name}.`, status: 'error' }))
 					;
 				} else {
 					destroy(value)
-						.then(() => toast({ description: 'Account deleted successfully!', status: 'success', ...toastDefaults }))
-						.catch(e => toast({ description: `Invalid ${name}.`, status: 'error', ...toastDefaults }))
+						.then(() => toast({ description: 'Account deleted successfully!' }))
+						.catch(e => toast({ description: `Invalid ${name}.`, status: 'error' }))
 					;
 				}
 
@@ -99,13 +97,13 @@ export default function Profile() {
 				break;
 			default:
 				update(currentUser)
-					.then(res => toast({ description: `Profile updated successfully!`, status: 'success', ...toastDefaults }))
-					.catch(e => toast({ description: `Invalid ${name}.`, status: 'error', ...toastDefaults }))
+					.then(res => toast({ description: `Profile updated successfully!` }))
+					.catch(e => toast({ description: `Invalid ${name}.`, status: 'error' }))
 				;
 				break;
 		}
 
-		writeUserData({ user: currentUser, isOnline: true });
+		// updateUserData({ user: currentUser, isOnline: true });
 		mounted.current && setIsSubmitting(false);
 	};
 

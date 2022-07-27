@@ -9,6 +9,7 @@ const config = { initialColorMode: 'light', useSystemColorMode: false };
 const theme = extendTheme({ config });
 
 ReactDOM.render(
+	// useMemo gets executed twice in Editor.js otherwise
 	<StrictMode>
 		<ChakraProvider>
 			<ColorModeScript initialColorMode={theme.config.initialColorMode} />

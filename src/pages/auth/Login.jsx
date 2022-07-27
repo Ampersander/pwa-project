@@ -10,17 +10,15 @@ import { Layout } from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import useMounted from '../../hooks/useMounted';
 
-const toastDefaults = { duration: 5000, isClosable: true };
-
 export default function Login() {
-	const { writeUserData, login, signInWithGoogle } = useAuth();
+	const { pushUserData, updateUserData, login, signInWithGoogle } = useAuth();
 	const history = useHistory();
 	const location = useLocation();
 	const mounted = useMounted();
 	const [inputs, setInputs] = useState({ email: '', password: '' });
 	const [errors, setErrors] = useState(inputs);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const toast = useToast();
+	const toast = useToast({ isClosable: true, status: 'success' });
 
 	const handleChange = e => {
 		const { name, value } = e.target;
@@ -29,16 +27,16 @@ export default function Login() {
 	};
 
 	const handleRedirectToOrBack = obj => {
-		writeUserData({ user: obj.user, isOnline: true });
+		updateUserData({ user: obj.user, isOnline: true });
 		history.replace(location.state?.from ?? '/profile');
-		toast({ description: `Logged in as ${obj.user.displayName}.`, status: 'success', ...toastDefaults });
+		toast({ description: `Logged in as ${obj.user.displayName}.` });
 	};
 	
 	const handleFormSubmit = async e => {
 		e.preventDefault();
 
 		if (!inputs.email || !inputs.password) {
-			toast({ description: 'Missing email or password.', status: 'error', ...toastDefaults });
+			toast({ description: 'Missing email or password.', status: 'error' });
 			return;
 		}
 
@@ -46,7 +44,7 @@ export default function Login() {
 
 		login(...Object.values(inputs))
 			.then(res => handleRedirectToOrBack(res))
-			.catch(e => toast({ description: 'Invalid email or password.', status: 'error', ...toastDefaults }))
+			.catch(e => toast({ description: 'Invalid email or password.', status: 'error' }))
 			.finally(() => mounted.current && setIsSubmitting(false))
 		;
 	};
@@ -54,7 +52,7 @@ export default function Login() {
 	const handleGoogleSignIn = () => {
 		signInWithGoogle()
 			.then(res => handleRedirectToOrBack(res))
-			.catch(e => toast({ description: 'Could not sign in with Google.', status: 'error', ...toastDefaults }))
+			.catch(e => toast({ description: 'Could not sign in with Google.', status: 'error' }))
 			;
 	};
 

@@ -8,19 +8,19 @@ import { Card } from '../../components/Card';
 import DividerWithText from '../../components/DividerWithText';
 import { Layout } from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDB } from '../../contexts/DatabaseContext';
 import useMounted from '../../hooks/useMounted';
 
-const toastDefaults = { duration: 5000, isClosable: true };
-
 export default function Register() {
-	const { signInWithGoogle, register, update } = useAuth();
+	const { signInWithGoogle, register, update, pushUserData, updateUserData } = useAuth();
+	const { database, child, push, ref, onValue } = useDB();
 	const history = useHistory();
 	const location = useLocation();
 	const mounted = useMounted();
 	const [inputs, setInputs] = useState({ name: '', email: '', password: '' });
 	const [errors, setErrors] = useState(inputs);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const toast = useToast();
+	const toast = useToast({ isClosable: true, status: 'success' });
 
 	const handleChange = e => {
 		const { name, value } = e.target;
@@ -29,17 +29,32 @@ export default function Register() {
 	};
 
 	const handleRedirectToOrBack = obj => {
-		update(obj.user, 'profile', { displayName: inputs.name ?? inputs.email});
+		update(obj.user, 'profile', { displayName: inputs.name ?? inputs.email });
+		
+		// onValue(ref(database, 'users/' + obj.user.uid), snapshot => {
+		// 	if (snapshot.exists()) {
+		// 		updateUserData({ user: obj.user, isOnline: true });
+		// 	} else {
+		// 		pushUserData({ user: obj.user, isOnline: true });
+		// 	}
+		// });
+
+		// push(ref(database, 'users'), {
+		// 	displayName: obj.user.displayName,
+		// 	email: obj.user.email,
+		// 	photoUrl: obj.user.photoUrl ?? null,
+		// 	isOnline: true
+		// });
 
 		history.replace(location.state?.from ?? '/profile');
-		toast({ title: `Registered as ${inputs.name}.`, description: 'Refresh to update your display name!', status: 'success', ...toastDefaults });
+		toast({ title: `Registered as ${inputs.name}.`, description: 'Refresh to update your display name!' });
 	};
 
 	const handleFormSubmit = async e => {
 		e.preventDefault();
 
 		if (!inputs.email || !inputs.password) {
-			toast({ description: 'Missing email or password.', status: 'error', ...toastDefaults });
+			toast({ description: 'Missing email or password.', status: 'error' });
 			return;
 		}
 
@@ -47,7 +62,7 @@ export default function Register() {
 
 		register(...Object.values(inputs).slice(1))
 			.then(res => handleRedirectToOrBack(res))
-			.catch(e => toast({ description: 'Invalid email or password.', status: 'error', ...toastDefaults }))
+			.catch(e => toast({ description: 'Invalid email or password.', status: 'error' }))
 			.finally(() => mounted.current && setIsSubmitting(false))
 		;
 	};
@@ -57,7 +72,7 @@ export default function Register() {
 
 		signInWithGoogle()
 			.then(res => {})
-			.catch(e => toast({ description: 'Invalid email or password.', status: 'error', duration: 5000, isClosable: true }))
+			.catch(e => toast({ description: 'Invalid email or password.', status: 'error' }))
 			.finally(() => mounted.current && setIsSubmitting(false))
 		;
 	};

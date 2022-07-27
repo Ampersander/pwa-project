@@ -13,7 +13,8 @@ import { auth } from '../utils/init-firebase';
 const AuthContext = createContext({
 	currentUser: null,
 	isLoading: true,
-	writeUserData: () => {},
+	pushUserData: () => {},
+	updateUserData: () => {},
 	signInWithGoogle: () => Promise,
 	login: () => Promise,
 	register: () => Promise,
@@ -46,16 +47,21 @@ export default function AuthContextProvider({ children }) {
 		return () => unsubscribe();
 	}, [currentUser, isLoading]);
 
-	function writeUserData({ user, isOnline } = {}) {
-		// console.log(user, isOnline, usersRef, child(usersRef, user.uid));
+	function pushUserData({ user, isOnline } = {}) {
+		push(ref(database, 'users/' + user.uid), {
+			displayName: user.displayName,
+			email: user.email,
+			// photoUrl: user.photoUrl ?? null,
+			isOnline: isOnline
+		});
+	}
 
-		push(child(usersRef, user.uid), {
-			// displayName: user.displayName,
-			// email: user.email,
-			// photoUrl: user.photoUrl,
-			// isOnline: isOnline
-			aaa: 'John',
-			bbb: 'DOE'
+	function updateUserData({ user, isOnline } = {}) {
+		push(ref(database, 'users/' + user.uid), {
+			displayName: user.displayName,
+			email: user.email,
+			// photoUrl: user.photoUrl ?? null,
+			isOnline: isOnline
 		});
 	}
 
@@ -118,6 +124,7 @@ export default function AuthContextProvider({ children }) {
 	}
 
 	function logout() {
+		updateUserData({ user: currentUser, isOnline: false });
 		return signOut(auth);
 	}
 
@@ -129,7 +136,8 @@ export default function AuthContextProvider({ children }) {
 	const value = {
 		currentUser,
 		isLoading,
-		writeUserData,
+		pushUserData,
+		updateUserData,
 		signInWithGoogle,
 		login,
 		register,

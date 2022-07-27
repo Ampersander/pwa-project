@@ -1,9 +1,12 @@
 import React, { createRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
-import { useDimensions, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Box, Button, ButtonGroup, Container, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Input, InputGroup, InputLeftAddon, InputRightAddon, List, ListIcon, ListItem, Select, Stack, Textarea, Tooltip, useColorModeValue, useDisclosure, useEditableControls, Checkbox, CheckboxGroup, Text, Image, useBreakpointValue } from '@chakra-ui/react';
-import { FaArrowDown, FaArrowUp, FaCheck, FaCog, FaPlus, FaTimes, FaUser, FaMinus } from 'react-icons/fa';
+import { useToast, useDimensions, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Box, Button, ButtonGroup, Container, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Editable, EditableInput, EditablePreview, FormControl, FormLabel, Heading, HStack, IconButton, Input, InputGroup, InputLeftAddon, InputRightAddon, List, ListIcon, ListItem, Select, Stack, Textarea, Tooltip, useColorModeValue, useDisclosure, useEditableControls, Checkbox, CheckboxGroup, Text, Image, useBreakpointValue, toast } from '@chakra-ui/react';
+import { FaArrowDown, FaArrowUp, FaCheck, FaCog, FaPlus, FaTimes, FaUser, FaMinus, FaSave } from 'react-icons/fa';
 import CodeMirror from 'codemirror'; 
 import { Controlled } from 'react-codemirror2-react-17';
+import Reveal from 'reveal.js';
+import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js';
+import checkConnectivity from "network-latency";
 // import { useScreenshot } from 'use-react-screenshot';
 
 import { Layout } from '../components/Layout';
@@ -13,11 +16,35 @@ import useMounted from '../hooks/useMounted';
 // import useScreenshots from '../hooks/useScreenshots';
 import DividerWithText from '../components/DividerWithText';
 
+import { getPresentation, getPresentations, setPresentation, setPresentations, unsetPresentation } from '../idbHelpers';
+
 require('codemirror/lib/codemirror.css');
-require('codemirror/theme/material.css');
-require('codemirror/theme/neat.css');
-require('codemirror/mode/xml/xml.js');
-require('codemirror/mode/javascript/javascript.js');
+
+checkConnectivity({
+	interval: 3000,
+	threshold: 2000
+});
+
+let NETWORK_STATE = true;
+
+const keyMaps = [
+	{ value: 'default', file: null },
+	{ value: 'sublime', file: require('codemirror/keymap/sublime.js') }
+];
+
+const modes = [
+	{ value: 'css', file: require('codemirror/mode/css/css.js') },
+	{ value: 'null', file: null, title: 'none' },
+	{ value: 'javascript', file: require('codemirror/mode/javascript/javascript.js') },
+	{ value: 'markdown', file: require('codemirror/mode/markdown/markdown.js') }
+];
+
+const themes = [
+	{ value: 'default', file: null },
+	{ value: 'material', file: require('codemirror/theme/material.css') },
+	{ value: 'monokai', file: require('codemirror/theme/monokai.css') },
+	{ value: 'neat', file: require('codemirror/theme/neat.css') }
+];
 
 const _interopDefault = ex => { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
@@ -25,12 +52,13 @@ const html2canvas = _interopDefault(require('html2canvas'));
 
 export default function Editor() {
 	const { currentUser } = useAuth();
-	const { database, child, push, ref } = useDB();
+	const { database, child, push, ref, onValue } = useDB();
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const mounted = useMounted();
 	const initialRef = useRef(null);
 	const showUserList = useBreakpointValue({ base: 'none', md: 'block' })
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const toast = useToast({ isClosable: true, duration: 5000, status: true });
 
 	const [presentation, setPresentation] = useState({
 		title: 'Untitled',
@@ -39,18 +67,40 @@ export default function Editor() {
 			{ id: 2, content: 'Welcome to your own private pad! Share the URL below and collaborate with your friends.', src: null },
 		],
 		author: currentUser.displayName ?? currentUser.email,
+		collaborators: [currentUser.displayName],
 		path: '',
 		description: '',
 		createdAt: new Date().toLocaleString(),
 		updatedAt: new Date().toLocaleString(),
 		options: {
-			mode: 'xml',
+			keyMap: 'sublime',
+			mode: 'markdown',
 			theme: 'material',
 			lineNumbers: false,
 			lineWrapping: true,
 			readOnly: false
 		}
 	});
+
+	console.log(presentation);
+
+	const slideRefs = useMemo(() => { return presentation.slides.map(() => createRef()); }, [presentation.slides]);
+
+	let deck = new Reveal({
+		plugins: [Markdown]
+	});
+
+	// document.addEventListener('connection-changed', ({ detail }) => {
+	// 	NETWORK_STATE = detail;
+
+	// 	if (NETWORK_STATE) {
+	// 		document.documentElement.style.setProperty('--app-bg-color', 'royalblue');
+	// 		toast({ description: 'Back online!', status: 'info'})
+	// 	} else {
+	// 		document.documentElement.style.setProperty('--app-bg-color', '#717276');
+	// 		toast({ description: 'No connectivity internet.', status: 'warning'})
+	// 	}
+	// });
 
 	const EditableControls = ({ target }) => {
 		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls();
@@ -65,52 +115,82 @@ export default function Editor() {
 
 	const handleSlideChange = (index, value) => {
 		const newSlide = { ...presentation.slides[index], content: value };
-		console.log([...presentation.slides.slice(0, index), newSlide, ...presentation.slides.slice(index + 1)]);
-		// set array and replace the old slide with the new one
 		const newSlides = [...presentation.slides.slice(0, index), newSlide, ...presentation.slides.slice(index + 1)];
 		setPresentation({ ...presentation, slides: newSlides });
 	};
 
+	const startPresentation = () => {
+		deck.initialize();
+	};
+
+	const getPresentation = () => {
+		// Get presentation from database
+		var hash = window.location.hash.replace(/#/g, '');
+		var reference = ref(database, `presentations/${hash}`);
+
+		onValue(reference, (snapshot) => {
+			if (snapshot.exists()) {
+				console.log(snapshot.val());
+				hash = window.location.hash.replace(/#/g, '');
+			}
+		});
+	};
+
+	const savePresentation = (e) => {
+		var reference = ref(database, 'presentations');
+		var hash = window.location.hash.replace(/#/g, '');
+
+		if (hash) {
+			reference = push(child(reference, hash), presentation);
+		} else {
+			reference = push(reference, presentation);
+		}
+		
+		window.location = window.location + '#' + reference.key; // add it as a hash to the URL.
+		toast({ description: 'Presentation ' + presentation.title + ' saved!' });
+		// toast({ description: 'Failed to save presentation.', status: 'error' });
+		return reference;
+	};
+
 	const addSlide = (index) => {
-		console.log(index);
-		if(index == presentation.slides.length){
+		// console.log(index);
+
+		if (index === presentation.slides.length){
 			setPresentation({ ...presentation, slides: [...presentation.slides, { id: presentation.slides.length + 1, content: '', src: null }] });
-		}else{
+		} else {
 			const newSlides = [...presentation.slides.slice(0, index), { id: presentation.slides[index].id + 1, content: '', src: null }, ...presentation.slides.slice(index)];
 			setPresentation({ ...presentation, slides: newSlides });
 		}
 	};
+
 	const deleteSlide = (index) => {
-		console.log(index);
-		if(index == 0){
+		if (presentation.slides.length <= 1) return;
+	
+		// console.log(index);
+
+		if (index === 0) {
 			//remove the first slide
 			setPresentation({ ...presentation, slides: presentation.slides.slice(1) });
 			//setPresentation({ ...presentation, slides: [...presentation.slides.slice(1)] });
-		}else{
+		} else {
 			const newSlides = [...presentation.slides.slice(0, presentation.slides.length - 1)];
 			setPresentation({ ...presentation, slides: newSlides });
 		}
-		console.log(presentation.slides.length);
 
+		// console.log(presentation.slides.length);
 	};
-	
 
 	const handleFormSubmit = async e => {
-		const { checked, id, name, value } = e.target;			
+		const { checked, name, value } = e.target;			
 
 		setIsSubmitting(true);
 
-		// If name contains 'options', then we need to update the options
-		if (id.includes('slide')) {
-			const slideId = id.split('.')[1];
-			const newSlide = { ...presentation.slides[slideId], content: value };
-			const newSlides = { ...presentation.slides, [slideId]: newSlide };
-			setPresentation({ ...presentation, slides: newSlides });
-		} else if (name.includes('options')) {
+		if (name.includes('options')) {
 			const optionName = name.split('.')[1];
 			const optionValue = checked ?? value;
 			const newOptions = { ...presentation.options, [optionName]: optionValue };
 			setPresentation({ ...presentation, options: newOptions });
+			toast({ description: `Option ${optionName} updated.`, status: 'info' });
 		} else {
 			setPresentation(values => ({ ...values, [name]: value }));
 		}
@@ -145,13 +225,15 @@ export default function Editor() {
 	};
 
 	useEffect(() => {
-		takeScreenshots();
+		/* if (NETWORK_STATE) */ getPresentation();
+		
+		setInterval(() => {
+			takeScreenshots();
+		}, 5000);
 	}, []);
 
-	getExampleRef();
+	// getExampleRef();
 	// var codeMirror = CodeMirror(document.getElementById('cm-container'), presentation.options);
-	// var userId = Math.floor(Math.random() * 9999999999).toString();
-	// var userId = currentUser.uid;
 
 	function getExampleRef() {
 		var reference = ref(database, 'presentations');
@@ -293,12 +375,22 @@ export default function Editor() {
 									</AccordionButton>
 
 									<AccordionPanel pb={4}>
+										<FormControl py={4}>
+											<FormLabel color='teal' textAlign='center' htmlFor='options.keyMap'>Key Map</FormLabel>
+
+											<Select defaultValue={presentation.options.keyMap} name='options.keyMap' onChange={handleFormSubmit}>
+												{keyMaps.map(keyMap => (
+													<option key={keyMap.value} value={keyMap.value}>{keyMap.title ?? keyMap.value}</option>
+												))}
+											</Select>
+										</FormControl>
+
 										<FormControl pb={4}>
 											<FormLabel color='teal' textAlign='center' htmlFor='options.mode'>Mode</FormLabel>
 
 											<Select defaultValue={presentation.options.mode} name='options.mode' onChange={handleFormSubmit}>
-												{['javascript', 'xml'].map(mode => (
-													<option key={mode} value={mode}>{mode.toUpperCase()}</option>
+												{modes.map(mode => (
+													<option key={mode.value} value={mode.value}>{mode.title ?? mode.value}</option>			
 												))}
 											</Select>
 										</FormControl>
@@ -307,8 +399,8 @@ export default function Editor() {
 											<FormLabel color='teal' textAlign='center' htmlFor='options.theme'>Theme</FormLabel>
 
 											<Select defaultValue={presentation.options.theme} name='options.theme' onChange={handleFormSubmit}>
-												{['material', 'neat'].map(theme => (
-													<option key={theme} value={theme}>{theme.replace(/^\w/, (c) => c.toUpperCase())}</option>
+												{themes.map(theme => (
+													<option key={theme.value} value={theme.value}>{theme.title ?? theme.value}</option>
 												))}
 											</Select>
 										</FormControl>
@@ -335,19 +427,24 @@ export default function Editor() {
 				</Drawer>
 
 				<HStack>
-					<Container display={showUserList} maxW='3xs' id='firepad-userlist' alignSelf='start'>
-						<Button leftIcon={<FaCog />} colorScheme='pink' onClick={onOpen}>Settings</Button>
+					<Container display={showUserList} maxW='3xs' alignSelf='start'>
+						<HStack spacing={[1, 1]}>
+							<Button leftIcon={<FaCog />} colorScheme='pink' onClick={onOpen}>Settings</Button>
+							<Button leftIcon={<FaSave />} colorScheme='teal' onClick={savePresentation}>Save</Button>
+						</HStack>
 
 						<Heading size='md' mt={8}>User List</Heading>
 
-						<List spacing={3}>
-							<ListItem key={1}>
-								<ListIcon as={FaUser} color='green.500' />
-								{currentUser.displayName}
-							</ListItem>
+						<List id='userlist' spacing={3}>
+							{presentation.collaborators.map((collaborator, index) => (
+								<ListItem key={index}>
+									<ListIcon as={FaUser} color='green.500' />
+									{collaborator}
+								</ListItem>
+							))}
 						</List>
 
-						<Heading size='md' mt={8}>Slides</Heading>
+						<Heading size='md' mt={8} mb={2}>Slides</Heading>
 
 						<List spacing={3}>
 							{/* for each slide, take a screenshot of it */}
@@ -360,7 +457,7 @@ export default function Editor() {
 						</List>
 					</Container>
 
-					<Container m='auto' minW='xs' maxW='3xl' id='firepad'>
+					<Container m='auto' minW='xs' maxW='3xl' id='editor'>
 						<FormControl textAlign='center'>
 							<Editable isDisabled={presentation.options.readOnly} defaultValue={presentation.title}>
 								<Tooltip label={presentation.options.readOnly ? 'Read Only' : 'Click to edit'}>
@@ -375,12 +472,11 @@ export default function Editor() {
 						</FormControl>
 						
 						{presentation.slides.sort().map((slide, index) => (
-							
-							<Container key={index} m={0} p={0} maxW='initial'>
+							<Container ref={slideRefs[index]} key={index} m={0} p={0} maxW='initial'>
 								{index == 0  && (
 									<DividerWithText hasComponents my={6}>
 										<IconButton icon={<FaPlus />} onClick={() => addSlide(index)} />
-										<IconButton icon={<FaMinus />} onClick={() => deleteSlide(index)} />
+										<IconButton hidden={index === 0} icon={<FaMinus />} onClick={() => deleteSlide(index)} />
 									</DividerWithText>
 								)}
 								<Controlled
@@ -389,7 +485,7 @@ export default function Editor() {
 									value={slide.content}
 									options={presentation.options}
 									onBeforeChange={(editor, data, value) => handleSlideChange(index, value)}
-									onChange={(editor, value) => takeScreenshots()}
+									// onChange={(editor, value) => takeScreenshots()}
 								/>
 
 								{index !== presentation.slides.length  && (
@@ -398,7 +494,6 @@ export default function Editor() {
 										<IconButton icon={<FaMinus />} onClick={() => deleteSlide(index+1)} />
 									</DividerWithText>
 								)}
-
 							</Container>
 						))}
 
